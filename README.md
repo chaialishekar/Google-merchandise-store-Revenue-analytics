@@ -19,8 +19,6 @@ Instead of jumping to conclusions, this project approaches the problem the way a
 </p>
 
 
-
-|---|---|
 | **Dataset** | [`bigquery-public-data.ga4_obfuscated_sample_ecommerce`](https://console.cloud.google.com/bigquery) |
 | **Scope** | Nov 1, 2020 – Jan 31, 2021 · 267,116 sessions · $362,165 revenue |
 | **Skills** | SQL (BigQuery), hypothesis testing, correlation analysis, funnel analysis, product strategy |

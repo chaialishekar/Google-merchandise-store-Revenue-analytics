@@ -20,7 +20,6 @@ Instead of jumping to conclusions, this project approaches the problem the way a
 
 
 
-| | |
 |---|---|
 | **Dataset** | [`bigquery-public-data.ga4_obfuscated_sample_ecommerce`](https://console.cloud.google.com/bigquery) |
 | **Scope** | Nov 1, 2020 – Jan 31, 2021 · 267,116 sessions · $362,165 revenue |
@@ -39,7 +38,7 @@ The investigation moved through five phases — all code lives in [`analysis.py`
 | **1. Data Exploration** | What events exist? What does the schema look like? |
 | **2. Funnel Diagnostics** | Is the decline driven by traffic or conversion? Where's the drop-off? |
 | **3. Segmentation** | Does it vary by channel, device, geography, or user type? |
-| **4. Statistical Validation** | Is the decline real? Isolated to one segment? *(see [Statistical Model](docs/STATISTICAL_MODEL.md))* |
+| **4. Statistical Validation** | Is the decline real? Isolated to one segment? *(see [Statistical Model](STATISTICAL_MODEL.md))* |
 | **5. Product-Level Analysis** | Are specific products underperforming? |
 
 **Known data caveats**, identified and handled in the code:
@@ -103,7 +102,7 @@ Full statistical methodology, formulas, and interpretation: **[docs/STATISTICAL_
 | GTM strategy deck | [`deliverables/GA4_Revenue_Funnel_GTM_Strategy.pptx`](deliverables/GA4_Revenue_Funnel_GTM_Strategy.pptx) |
 | Condensed summary deck | [`deliverables/GA4_Revenue_to_Solution_Overview.pptx`](deliverables/GA4_Revenue_to_Solution_Overview.pptx) |
 | Executive summary (3 pages) | [`deliverables/GA4_Business_Summary.pdf`](deliverables/GA4_Business_Summary.pdf) |
-| Statistical model & formulas | [`docs/STATISTICAL_MODEL.md`](docs/STATISTICAL_MODEL.md) |
+| Statistical model & formulas | [`STATISTICAL_MODEL.md`](STATISTICAL_MODEL.md) |
 | All code (SQL + Python) | [`analysis.py`](analysis.py) |
 
 ---

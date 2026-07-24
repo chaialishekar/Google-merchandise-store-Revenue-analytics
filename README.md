@@ -15,7 +15,7 @@ At first glance, it was unclear **why revenue was falling**. Was the business at
 Instead of jumping to conclusions, this project approaches the problem the way a Business Analyst or Product Analyst would—by investigating the complete customer journey, validating findings with statistics, and transforming insights into a product recommendation.
 
 <p align="center">
-<img src="assets/story/process.png" width="850">
+<img src="process.png" width="850">
 </p>
 
 

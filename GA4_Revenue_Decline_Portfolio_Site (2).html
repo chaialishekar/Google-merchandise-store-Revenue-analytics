@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnosing a Revenue Decline — Chaitali Shashi Shekar</title>
+<meta name="description" content="A revenue analytics case study: diagnosing a conversion-driven revenue decline at the Google Merchandise Store using SQL, funnel analysis, and statistical validation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@400;500;600&family=Permanent+Marker&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Google palette */
+    --blue:#4285F4;
+    --red:#EA4335;
+    --yellow:#FBBC05;
+    --green:#34A853;
+    --blue-soft:#E8F0FE;
+    --red-soft:#FCE8E6;
+    --yellow-soft:#FEF7E0;
+    --green-soft:#E6F4EA;
+
+    --ink:#202124;
+    --muted:#5F6368;
+    --faint:#80868B;
+    --paper:#FFFFFF;
+    --surface:#F8F9FA;
+    --surface-2:#F1F3F4;
+    --line:#DADCE0;
+
+    --display:'Inter', sans-serif;
+    --body:'Inter', sans-serif;
+    --mono:'Google Sans Code','Inter', monospace;
+    --marker:'Permanent Marker', cursive;
+    --maxw:1080px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--body); -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  img,svg{max-width:100%; display:block;}
+  a{color:inherit;}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 32px;}
+  section{padding:96px 0;}
+  h1,h2,h3{font-family:var(--display); margin:0; letter-spacing:-0.015em;}
+
+  .eyebrow{
+    font-size:12.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  }
+  .section-head{max-width:600px; margin-bottom:52px;}
+  .section-head h2{font-size:clamp(24px,3vw,32px); margin-top:12px; font-weight:700;}
+  .section-head p{margin-top:12px; font-size:15.5px; color:var(--muted);}
+
+  /* ---------- NAV ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,.9); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{max-width:var(--maxw); margin:0 auto; padding:16px 32px; display:flex; align-items:center; justify-content:space-between;}
+  .brand{font-size:14px; font-weight:700;}
+  .brand span{color:var(--muted); font-weight:500;}
+  .navlinks{display:flex; gap:26px; font-size:13.5px; font-weight:500;}
+  .navlinks a{text-decoration:none; color:var(--muted); transition:color .15s;}
+  .navlinks a:hover{color:var(--ink);}
+  .nav-cta{font-size:13px; font-weight:600; background:var(--ink); color:#fff; padding:9px 16px; border-radius:8px; text-decoration:none; white-space:nowrap;}
+  @media (max-width:760px){ .navlinks{display:none;} }
+
+  /* ---------- HERO ---------- */
+  .hero{padding:100px 0 72px;}
+  .dotrow{display:flex; gap:8px; margin-bottom:22px;}
+  .dotrow span{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .hero .eyebrow{color:var(--blue);}
+  .hero h1{
+    font-size:clamp(34px,5.2vw,56px); font-weight:800; line-height:1.08; margin-top:18px; max-width:780px;
+  }
+  .hero h1 em{font-style:normal; color:var(--red);}
+  .hero p.lede{margin-top:20px; font-size:17px; color:var(--muted); max-width:560px;}
+
+  .statrow{display:flex; gap:0; margin-top:48px; border-top:1px solid var(--line);}
+  .stat{flex:1; padding:22px 24px 0; border-right:1px solid var(--line);}
+  .stat:last-child{border-right:none;}
+  .stat:first-child{padding-left:0;}
+  .stat .k{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--faint);}
+  .stat .v{font-family:var(--mono); font-size:26px; font-weight:600; margin-top:8px;}
+  .stat .s{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .stat .v.red{color:var(--red);}
+  .stat .v.blue{color:var(--blue);}
+  .stat .v.green{color:var(--green);}
+  @media (max-width:700px){ .statrow{flex-direction:column;} .stat{border-right:none; border-bottom:1px solid var(--line); padding:18px 0;} .stat:last-child{border-bottom:none;} }
+
+  /* ---------- JOURNEY STORY (horizontal animated rail) ---------- */
+  #journey{background:var(--ink); color:#fff; padding:88px 0;}
+  #journey .section-head{max-width:640px;}
+  #journey .section-head .eyebrow{color:#8AB4F8;}
+  #journey .section-head h2{color:#fff;}
+  #journey .section-head p{color:#9AA0A6;}
+
+  .flow-wrap{background:#111318; border-radius:20px; padding:44px 8px 32px; position:relative;}
+  .flow-wrap::before, .flow-wrap::after{
+    content:''; position:absolute; top:44px; bottom:32px; width:36px; z-index:2; pointer-events:none;
+  }
+  .flow-wrap::before{ left:0; background:linear-gradient(90deg, #111318, transparent); border-radius:20px 0 0 20px; }
+  .flow-wrap::after{ right:0; background:linear-gradient(-90deg, #111318, transparent); border-radius:0 20px 20px 0; }
+
+  .flow-rail{
+    display:flex; align-items:flex-start; overflow-x:auto; scroll-snap-type:x proximity;
+    padding:4px 28px 20px; -webkit-overflow-scrolling:touch;
+  }
+  .flow-rail::-webkit-scrollbar{height:6px;}
+  .flow-rail::-webkit-scrollbar-thumb{background:#3C4043; border-radius:10px;}
+
+  .flow-node{
+    flex:0 0 188px; display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:0 14px; scroll-snap-align:center;
+    opacity:0; transform:translateY(14px); animation:nodeIn .6s ease forwards;
+  }
+  @keyframes nodeIn{ to{ opacity:1; transform:translateY(0);} }
+
+  .flow-icon{
+    width:64px; height:64px; border-radius:16px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; margin-bottom:16px;
+    animation:iconPulse 2.6s ease-in-out infinite;
+  }
+  @keyframes iconPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+  .flow-icon svg{width:32px; height:32px;}
+
+  .flow-eyebrow{font-size:10.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px;}
+  .flow-node h3{
+    font-family:var(--marker); font-weight:400; font-size:16.5px;
+    line-height:1.3; color:#fff; letter-spacing:.01em; min-height:42px;
+  }
+  .flow-node p{font-size:12.5px; color:#9AA0A6; margin-top:8px; line-height:1.5;}
+  .flow-pill{
+    margin-top:12px; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--green); color:#04220F; padding:6px 13px; border-radius:20px; display:inline-block;
+  }
+
+  .flow-connector{
+    flex:0 0 46px; display:flex; align-items:center; justify-content:center;
+    margin-top:32px; position:relative; height:16px;
+  }
+  .flow-connector svg{width:46px; height:16px; overflow:visible;}
+  .flow-connector .fc-line{stroke:#3C4043; stroke-width:2;}
+  .flow-connector .fc-dot{ animation:dotFlow 1.6s linear infinite; }
+  @keyframes dotFlow{
+    0%{ transform:translateX(0); opacity:0; }
+    12%{ opacity:1; }
+    88%{ opacity:1; }
+    100%{ transform:translateX(34px); opacity:0; }
+  }
+  .flow-scroll-hint{
+    text-align:center; font-size:11px; color:#5F6368; margin-top:2px; letter-spacing:.03em;
+  }
+
+  @media (max-width:640px){
+    .flow-wrap{padding:32px 4px 24px;}
+    .flow-node{flex-basis:158px; padding:0 10px;}
+    .flow-icon{width:52px; height:52px; border-radius:13px;}
+    .flow-icon svg{width:26px; height:26px;}
+    .flow-connector{flex-basis:34px; margin-top:26px;}
+    .flow-connector svg{width:34px;}
+  }
+
+  /* ---------- INVESTIGATION ---------- */
+  .phasegrid{display:flex; flex-wrap:wrap; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .phase{background:#fff; padding:26px 22px; min-height:200px; display:flex; flex-direction:column; flex:1 1 190px;}
+  .phase.active{background:var(--surface);}
+  .phase .num{font-family:var(--mono); font-size:12px; color:var(--faint); font-weight:600;}
+  .phase.active .num{color:var(--blue);}
+  .phase h3{font-size:15px; font-weight:700; margin-top:14px; line-height:1.3;}
+  .phase p{font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.5;}
+  @media (max-width:900px){ .phase{flex-basis:45%;} }
+  @media (max-width:560px){ .phase{flex-basis:100%;} }
+
+  /* ---------- FINDINGS ---------- */
+  .findgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .find{background:#fff; padding:26px;}
+  .find .dot{width:9px; height:9px; border-radius:50%; margin-bottom:14px;}
+  .find h3{font-size:15.5px; font-weight:700; line-height:1.35;}
+  .find p{font-size:13px; color:var(--muted); margin-top:8px;}
+  @media (max-width:900px){ .findgrid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .findgrid{grid-template-columns:1fr;} }
+
+  /* ---------- VALIDATION ---------- */
+  .valgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .val{background:#fff; padding:28px;}
+  .val h3{font-size:15px; font-weight:700;}
+  .val .q{font-size:12.5px; font-style:italic; color:var(--muted); margin-top:10px; min-height:40px;}
+  .val .stat{font-family:var(--mono); font-size:22px; font-weight:600; margin-top:16px;}
+  .val .note{font-size:12px; color:var(--muted); margin-top:10px; line-height:1.55;}
+  @media (max-width:900px){ .valgrid{grid-template-columns:1fr;} }
+
+  /* ---------- CHARTS ---------- */
+  .chartrow{display:grid; grid-template-columns:1.3fr 1fr; gap:24px; align-items:stretch;}
+  @media (max-width:900px){ .chartrow{grid-template-columns:1fr;} }
+  .chartcard{background:#fff; border:1px solid var(--line); border-radius:14px; padding:26px 26px 20px;}
+  .chartcard .ct-title{font-size:14px; font-weight:700; margin-bottom:2px;}
+  .chartcard .ct-sub{font-size:12px; color:var(--muted); margin-bottom:14px;}
+  .chartcard svg{width:100%; height:auto; display:block;}
+  .chart-illustrative{font-size:10.5px; color:var(--faint); font-style:italic; margin-top:8px;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:12px;}
+  .legend span{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .legend i{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .val-chart{margin-top:16px;}
+  .val-chart svg{width:100%; height:auto;}
+
+  /* ---------- RECOMMENDATION ---------- */
+  .rec-top{display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:36px;}
+  .rec-top h3{font-size:21px; font-weight:700; max-width:520px;}
+  .rec-top .pill{font-size:11px; font-weight:700; letter-spacing:.05em; background:var(--blue-soft); color:var(--blue); padding:6px 13px; border-radius:20px; text-transform:uppercase; white-space:nowrap;}
+  .rec-desc{font-size:14.5px; color:var(--muted); max-width:660px; margin-top:10px;}
+
+  .chain{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .chain .step{background:#fff; padding:22px;}
+  .chain .step.impact{background:var(--ink); color:#fff;}
+  .chain .step .label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--blue);}
+  .chain .step.impact .label{color:#8AB4F8;}
+  .chain .step ul{margin:12px 0 0; padding-left:16px; font-size:13px;}
+  .chain .step li{margin-bottom:5px;}
+  @media (max-width:900px){ .chain{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .chain{grid-template-columns:1fr;} }
+
+  .rollout{display:flex; gap:20px; margin-top:36px; flex-wrap:wrap;}
+  .rollout .chip{flex:1; min-width:200px;}
+  .rollout .chip .ph{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:700;}
+  .rollout .chip .g{font-size:13.5px; margin-top:6px; line-height:1.5;}
+
+  .impact-row{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-top:40px;}
+  .impact-card{background:#fff; padding:24px;}
+  .impact-card .tag{font-size:11px; font-weight:700; letter-spacing:.05em;}
+  .impact-card .sub{font-size:12px; color:var(--muted); margin-top:4px;}
+  .impact-card .num{font-family:var(--mono); font-size:25px; font-weight:600; margin-top:16px;}
+  .impact-card .permo{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .impact-note{font-size:11.5px; color:var(--muted); margin-top:20px; max-width:760px; line-height:1.6;}
+  @media (max-width:900px){ .impact-row{grid-template-columns:1fr;} }
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--ink); color:#fff; padding:64px 0 36px;}
+  .foot-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:48px;}
+  footer h2{font-size:24px; font-weight:700;}
+  footer p.lede{color:#9AA0A6; margin-top:12px; font-size:14.5px; max-width:440px;}
+  .links{display:flex; flex-direction:column; gap:0; margin-top:4px;}
+  .links a{font-size:14px; text-decoration:none; color:#E8EAED; display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #3C4043;}
+  .links a span.arrow{color:#5F6368; transition:transform .15s;}
+  .links a:hover span.arrow{transform:translateX(3px); color:#8AB4F8;}
+  .stackrow{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+  .stackrow span{font-size:11.5px; color:#9AA0A6; border:1px solid #3C4043; padding:5px 11px; border-radius:20px;}
+  .foot-bottom{margin-top:48px; padding-top:22px; border-top:1px solid #3C4043; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:12.5px; color:#5F6368;}
+  @media (max-width:760px){ .foot-grid{grid-template-columns:1fr;} }
+
+  .reveal{opacity:0; transform:translateY(14px); transition:opacity .5s ease, transform .5s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1; transform:none; transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">Chaitali Shashi Shekar <span>· Revenue Analytics</span></div>
+    <nav class="navlinks">
+      <a href="#problem">Problem</a>
+      <a href="#journey">Journey</a>
+      <a href="#findings">Findings</a>
+      <a href="#validation">Validation</a>
+      <a href="#unit-economics">Unit Economics</a>
+      <a href="#recommendation">Recommendation</a>
+    </nav>
+    <a class="nav-cta" href="#footer-links">Deliverables ↓</a>
+  </div>
+</header>
+
+<section class="hero" id="problem">
+  <div class="wrap">
+    <div class="dotrow">
+      <span style="background:var(--blue)"></span>
+      <span style="background:var(--red)"></span>
+      <span style="background:var(--yellow)"></span>
+      <span style="background:var(--green)"></span>
+    </div>
+    <div class="eyebrow">Revenue Analytics Case Study</div>
+    <h1>Conversion fell <em>49%</em>.<br>Traffic never moved.</h1>
+    <p class="lede">The Google Merchandise Store's revenue was decling despite customer activity. Instead of guessing, this project traced the customer journey end to end, and pinned the decline to one statistically confirmed cause.</p>
+
+    <div class="statrow reveal">
+      <div class="stat">
+        <div class="k">Sessions </div>
+        <div class="v blue">267,116</div>
+        <div class="s">Held essentially flat, Nov – Jan</div>
+      </div>
+      <div class="stat">
+        <div class="k">Conversion, Dec → Jan</div>
+        <div class="v red">1.73% → 0.89%</div>
+        <div class="s">A 49% relative drop in six weeks</div>
+      </div>
+      <div class="stat">
+        <div class="k">Total revenue</div>
+        <div class="v green">$362,165</div>
+        <div class="s">Trending down into January</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="journey">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow">The Story</div>
+      <h2>Where does the climb meet a roadblock? </h2>
+      <p>The full arc of the investigation, in seven beats.</p>
+    </div>
+
+    <div class="flow-wrap reveal">
+      <div class="flow-rail">
+
+        <div class="flow-node" style="animation-delay:.05s">
+          <div class="flow-icon" style="background:rgba(66,133,244,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M20 22h36a2 2 0 012 2v28a2 2 0 01-2 2H20a2 2 0 01-2-2V24a2 2 0 012-2z" stroke="#4285F4" stroke-width="2.5"/><path d="M18 30h40" stroke="#4285F4" stroke-width="2.5"/><circle cx="25" cy="26" r="1.6" fill="#4285F4"/><circle cx="31" cy="26" r="1.6" fill="#4285F4"/><circle cx="37" cy="26" r="1.6" fill="#4285F4"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--blue)">The Journey</div>
+          <h3>Welcome to the Google MerchandiseStore</h3>
+          <p>A customer arrives with intent to browse, and maybe to buy.</p>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--blue)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.15s">
+          <div class="flow-icon" style="background:rgba(66,133,244,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><rect x="18" y="18" width="40" height="34" rx="3" stroke="#4285F4" stroke-width="2.5"/><path d="M18 26h40" stroke="#4285F4" stroke-width="2.5"/><circle cx="24" cy="22" r="1.6" fill="#4285F4"/><circle cx="30" cy="22" r="1.6" fill="#4285F4"/><path d="M24 42l7-8 6 6 11-12" stroke="#4285F4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--blue)">The Journey</div>
+          <h3>Every Customer Starts the Climb</h3>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--red)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.25s">
+          <div class="flow-icon" style="background:rgba(234,67,53,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M18 24h6l4 24h24l5-16H26" stroke="#EA4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="54" r="2.4" fill="#EA4335"/><circle cx="48" cy="54" r="2.4" fill="#EA4335"/><path d="M46 22l4 5m0-5l-4 5" stroke="#EA4335" stroke-width="2.5" stroke-linecap="round"/><circle cx="48" cy="30" r="8" stroke="#EA4335" stroke-width="2.5"/><path d="M48 27v3.5" stroke="#EA4335" stroke-width="2" stroke-linecap="round"/><circle cx="48" cy="33.5" r=".3" fill="#EA4335"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--red)">The Journey</div>
+          <h3>Customer meets a roadblock!!! </h3>
+          <p>Only 23% of sessions ever view a product. Most leave before checkout.</p>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--yellow)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.35s">
+          <div class="flow-icon" style="background:rgba(251,188,5,.16)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M20 54V26M32 54V34M44 54V22M56 54V38" stroke="#FBBC05" stroke-width="3" stroke-linecap="round"/><path d="M18 54h42" stroke="#FBBC05" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--yellow)">The Investigation</div>
+          <h3>Finding the Root Cause</h3>
+          <p>SQL + statistical testing — t = 4.332, p = 0.00006. A real, confirmed decline.</p>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--green)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.45s">
+          <div class="flow-icon" style="background:rgba(52,168,83,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M20 20h36a3 3 0 013 3v22a3 3 0 01-3 3H34l-10 9v-9h-4a3 3 0 01-3-3V23a3 3 0 013-3z" stroke="#34A853" stroke-width="2.5" stroke-linejoin="round"/><path d="M38 28v14M31 35h14" stroke="#34A853" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--green)">The Fix</div>
+          <h3>A Solution Removes Friction</h3>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--green)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.55s">
+          <div class="flow-icon" style="background:rgba(52,168,83,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M22 30h12l3 20h20l4-14H31" stroke="#34A853" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 22l3 3 6-7" stroke="#34A853" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--green)">The Result</div>
+          <h3>More Complete the Journey</h3>
+          <p>Moderate scenario: recovers roughly half the Dec → Jan gap.</p>
+        </div>
+
+        <div class="flow-connector">
+          <svg viewBox="0 0 46 16"><line class="fc-line" x1="2" y1="8" x2="44" y2="8"/><circle class="fc-dot" cx="6" cy="8" r="3.5" fill="var(--green)"/></svg>
+        </div>
+
+        <div class="flow-node" style="animation-delay:.65s">
+          <div class="flow-icon" style="background:rgba(52,168,83,.14)">
+            <svg viewBox="0 0 76 76" fill="none"><path d="M38 16v44M46 24c0-4-16-4-16 3s16 3 16 10-16 7-16 3" stroke="#34A853" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 30l8-10" stroke="#34A853" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="flow-eyebrow" style="color:var(--green)">The Result</div>
+          <h3>Revenue Grows</h3>
+          <p>~$80K projected quarterly uplift in the moderate scenario.</p>
+          <div class="flow-pill">Grounded in the data</div>
+        </div>
+
+      </div>
+      <div class="flow-scroll-hint">← scroll to explore →</div>
+    </div>
+  </div>
+</section>
+
+<section id="investigation">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:var(--blue)">The Investigation</div>
+      <h2>Five phases, each answering one business question</h2>
+      <p>All analysis run in SQL against <code>bigquery-public-data.ga4_obfuscated_sample_ecommerce</code>, validated statistically before any recommendation was made.</p>
+    </div>
+    <div class="phasegrid reveal">
+      <div class="phase">
+        <div class="num">01</div>
+        <h3>Data Exploration</h3>
+        <p>Mapped the event schema; what exists, and what's reliable enough to build on.</p>
+      </div>
+      <div class="phase">
+        <div class="num">02</div>
+        <h3>Funnel Diagnostics</h3>
+        <p>Traced session → view → cart → checkout → purchase to find where customers leave.</p>
+      </div>
+      <div class="phase">
+        <div class="num">03</div>
+        <h3>Segmentation</h3>
+        <p>Split by channel, device, geography, and visitor type to see who it hits hardest.</p>
+      </div>
+      <div class="phase active">
+        <div class="num">04</div>
+        <h3>Statistical Validation</h3>
+        <p>Tested whether the decline was real, isolated to one segment, or safe to forecast from.</p>
+      </div>
+      <div class="phase">
+        <div class="num">05</div>
+        <h3>Product-Level Analysis</h3>
+        <p>Checked whether specific products rather than the funnel were underperforming.</p>
+      </div>
+    </div>
+
+    <div class="chartrow reveal" style="margin-top:32px;">
+      <div class="chartcard">
+        <div class="ct-title">The purchase funnel, in absolute terms</div>
+        <div class="ct-sub">267,116 sessions → 4,066 purchases. Real data, from <code>analysis.py</code> Phase 2.</div>
+        <svg viewBox="0 0 620 230" role="img" aria-label="Funnel bar chart">
+          <text x="0" y="18" font-size="12" fill="#5F6368" font-family="Inter">Sessions</text>
+          <rect x="140" y="6" width="460" height="24" rx="4" fill="#4285F4"/>
+          <text x="608" y="23" font-size="12" font-weight="700" fill="#202124" text-anchor="end" font-family="Google Sans Code, monospace">100% · 267,116</text>
+
+          <text x="0" y="62" font-size="12" fill="#5F6368" font-family="Inter">Viewed Product</text>
+          <rect x="140" y="50" width="105" height="24" rx="4" fill="#EA4335"/>
+          <text x="608" y="67" font-size="12" font-weight="700" fill="#202124" text-anchor="end" font-family="Google Sans Code, monospace">22.9% · 61,252</text>
+
+          <text x="0" y="106" font-size="12" fill="#5F6368" font-family="Inter">Added to Cart</text>
+          <rect x="140" y="94" width="22" height="24" rx="4" fill="#EA4335"/>
+          <text x="608" y="111" font-size="12" font-weight="700" fill="#202124" text-anchor="end" font-family="Google Sans Code, monospace">4.7% · 12,545</text>
+
+          <text x="0" y="150" font-size="12" fill="#5F6368" font-family="Inter">Began Checkout</text>
+          <rect x="140" y="138" width="17" height="24" rx="4" fill="#34A853"/>
+          <text x="608" y="155" font-size="12" font-weight="700" fill="#202124" text-anchor="end" font-family="Google Sans Code, monospace">3.6% · 9,715</text>
+
+          <text x="0" y="194" font-size="12" fill="#5F6368" font-family="Inter">Purchased</text>
+          <rect x="140" y="182" width="7" height="24" rx="4" fill="#34A853"/>
+          <text x="608" y="199" font-size="12" font-weight="700" fill="#202124" text-anchor="end" font-family="Google Sans Code, monospace">1.5% · 4,066</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#4285F4"></i>Baseline</span>
+          <span><i style="background:#EA4335"></i>Largest leak (pre-checkout)</span>
+          <span><i style="background:#34A853"></i>Healthy once reached</span>
+        </div>
+      </div>
+
+      <div class="chartcard">
+        <div class="ct-title">Channel conversion rate, month by month</div>
+        <div class="ct-sub">Real data — CPC underperforms every month, without exception.</div>
+        <svg viewBox="0 0 300 210" role="img" aria-label="Channel conversion line chart">
+          <line x1="50" y1="20" x2="50" y2="170" stroke="#DADCE0" stroke-width="1"/>
+          <line x1="50" y1="170" x2="280" y2="170" stroke="#DADCE0" stroke-width="1"/>
+          <text x="45" y="24" font-size="9" fill="#80868B" text-anchor="end">2.2%</text>
+          <text x="45" y="97" font-size="9" fill="#80868B" text-anchor="end">1.1%</text>
+          <text x="45" y="172" font-size="9" fill="#80868B" text-anchor="end">0%</text>
+
+          <polyline points="70,32 175,32 280,112" fill="none" stroke="#4285F4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="70" cy="32" r="3.5" fill="#4285F4"/><circle cx="175" cy="32" r="3.5" fill="#4285F4"/><circle cx="280" cy="112" r="3.5" fill="#4285F4"/>
+
+          <polyline points="70,92 175,84 280,139" fill="none" stroke="#34A853" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="70" cy="92" r="3.5" fill="#34A853"/><circle cx="175" cy="84" r="3.5" fill="#34A853"/><circle cx="280" cy="139" r="3.5" fill="#34A853"/>
+
+          <polyline points="70,104 175,108 280,144" fill="none" stroke="#EA4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="70" cy="104" r="3.5" fill="#EA4335"/><circle cx="175" cy="108" r="3.5" fill="#EA4335"/><circle cx="280" cy="144" r="3.5" fill="#EA4335"/>
+
+          <text x="70" y="188" font-size="10" fill="#5F6368" text-anchor="middle">Nov</text>
+          <text x="175" y="188" font-size="10" fill="#5F6368" text-anchor="middle">Dec</text>
+          <text x="280" y="188" font-size="10" fill="#5F6368" text-anchor="middle">Jan</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#4285F4"></i>Referral (2.04→1.01%)</span>
+          <span><i style="background:#34A853"></i>Organic (1.26→0.65%)</span>
+          <span><i style="background:#EA4335"></i>CPC (1.11→0.60%)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="findings" style="background:var(--surface)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:var(--blue)">Analysis</div>
+      <h2>What the funnel and the data actually show</h2>
+      <p>Six findings, each one holding up against an obvious alternative explanation.</p>
+    </div>
+    <div class="findgrid reveal">
+      <div class="find"><span class="dot" style="background:var(--red)"></span><h3>Conversion-driven, not traffic-driven</h3><p>Sessions held flat (~2,300–4,600/day); conversion fell 1.73% → 0.89%, Dec to Jan.</p></div>
+      <div class="find"><span class="dot" style="background:var(--blue)"></span><h3>The biggest leak sits before checkout</h3><p>Only 23% of sessions view a product; checkout-to-purchase is a healthy 42%.</p></div>
+      <div class="find"><span class="dot" style="background:var(--green)"></span><h3>The decline is statistically significant</h3><p>Welch's t-test: t = 4.332, p = 0.00006 — not day-to-day noise.</p></div>
+      <div class="find"><span class="dot" style="background:var(--yellow)"></span><h3>It's seasonal, not a broken feature</h3><p>Desktop and mobile conversion move together: r = 0.81.</p></div>
+      <div class="find"><span class="dot" style="background:var(--red)"></span><h3>Paid traffic underperforms every month</h3><p>CPC converts lowest of all channels, Nov through Jan, without exception.</p></div>
+      <div class="find"><span class="dot" style="background:var(--green)"></span><h3>Returning customers convert 5.3× better</h3><p>6.67% conversion vs. 1.25% for new customers — the single largest lever.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="validation">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:var(--blue)">Statistical Validation</div>
+      <h2>Three tests: is it real, is it isolated, can it be trusted</h2>
+      <p>Every finding above had to survive a specific statistical challenge before it made the cut.</p>
+    </div>
+    <div class="valgrid reveal">
+      <div class="val">
+        <h3>Welch's t-test</h3>
+        <div class="q">"Is the Dec → Jan drop real, or normal daily noise?"</div>
+        <div class="val-chart">
+          <svg viewBox="0 0 160 90" role="img" aria-label="Bar chart comparing December and January conversion rate">
+            <rect x="30" y="14" width="34" height="66" rx="3" fill="#4285F4"/>
+            <text x="47" y="10" font-size="10" font-weight="700" fill="#202124" text-anchor="middle">1.73%</text>
+            <text x="47" y="88" font-size="9" fill="#5F6368" text-anchor="middle">Dec</text>
+            <rect x="96" y="46" width="34" height="34" rx="3" fill="#EA4335"/>
+            <text x="113" y="42" font-size="10" font-weight="700" fill="#202124" text-anchor="middle">0.89%</text>
+            <text x="113" y="88" font-size="9" fill="#5F6368" text-anchor="middle">Jan</text>
+          </svg>
+        </div>
+        <div class="stat" style="color:var(--red); font-size:16px;">t = 4.332 · p = 0.00006</div>
+        <div class="note">A gap this size would occur by chance only ~6 times in 100,000 — treated as a real behavioral shift, not noise.</div>
+      </div>
+      <div class="val">
+        <h3>Pearson Correlation</h3>
+        <div class="q">"Isolated to one device, or shared across both?"</div>
+        <div class="val-chart">
+          <svg viewBox="0 0 160 90" role="img" aria-label="Two lines moving together, illustrating desktop and mobile correlation">
+            <polyline points="10,55 30,35 50,48 70,28 90,42 110,24 130,38 150,22" fill="none" stroke="#4285F4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="10,62 30,44 50,56 70,38 90,50 110,32 130,46 150,30" fill="none" stroke="#34A853" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat" style="color:var(--blue); font-size:16px;">r = 0.81</div>
+        <div class="chart-illustrative">Illustrative pattern — desktop &amp; mobile move together</div>
+        <div class="note">Rules out a device-specific defect, supports a shared, seasonal cause.</div>
+      </div>
+      <div class="val">
+        <h3>OLS Linear Regression</h3>
+        <div class="q">"Can a simple trend be trusted for forecasting?"</div>
+        <div class="val-chart">
+          <svg viewBox="0 0 160 90" role="img" aria-label="Curve showing holiday rise and fall, with a straight regression line that fits poorly">
+            <path d="M10,60 C35,15 55,10 75,25 C95,40 120,68 150,78" fill="none" stroke="#34A853" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="10" y1="42" x2="150" y2="66" stroke="#EA4335" stroke-width="2" stroke-dasharray="4 3"/>
+          </svg>
+        </div>
+        <div class="stat" style="color:var(--yellow); font-size:16px;">β₁ = −44.27/day</div>
+        <div class="chart-illustrative">Illustrative shape — green: actual pattern, red: naive straight-line fit</div>
+        <div class="note">The window includes the Nov/Dec holiday spike, so the slope overstates the decline. Flagged, not used at face value.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="unit-economics" style="background:var(--surface)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:var(--blue)">Unit Economics</div>
+      <h2>What a customer is worth — and where the math has to stop</h2>
+      <p>This GA4 dataset records behavior, not ad spend, so LTV is real and CAC is a labeled assumption — not a measured result.</p>
+    </div>
+    <div class="valgrid reveal">
+      <div class="val">
+        <h3>Lifetime Value (LTV)</h3>
+        <div class="q">"What is a purchasing customer worth, from real data?"</div>
+        <div class="stat" style="color:var(--green)">$89.07 / 3 mo.</div>
+        <div class="note">Real — total revenue ÷ purchasing customers (4,066). AOV = $69.09; 1.29 orders/customer. Equivalent to $29.69/month per customer.</div>
+      </div>
+      <div class="val">
+        <h3>Customer Acquisition Cost (CAC)</h3>
+        <div class="q">"What does it cost to acquire a customer?"</div>
+        <div class="stat" style="color:var(--red)">Not computable</div>
+        <div class="note">This dataset has no marketing spend or cost-per-channel field. Any CAC figure used below is a labeled illustrative assumption, not a measured value.</div>
+      </div>
+      <div class="val">
+        <h3>LTV : CAC &amp; Payback</h3>
+        <div class="q">"Assumes CAC = $25"</div>
+        <div class="stat" style="color:var(--yellow)">3.56 : 1<br>0.84 mo. payback</div>
+        <div class="note">Shown only to demonstrate the framework. Above the commonly-cited 3:1 health bar and a sub-1-month payback — but not a claim about this business's actual acquisition cost.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="recommendation" style="background:var(--surface)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow" style="color:var(--blue)">Recommendation</div>
+      <h2>One recommendation followed from the data</h2>
+      <p>The analysis — not the other way around — points to where to intervene.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="rec-top">
+        <div>
+          <h3>Recommended intervention: Nova, an AI discovery assistant</h3>
+          <p class="rec-desc">Finding #2 identified a pre-checkout leak: most sessions never reach a product page. Nova targets exactly that gap — reducing the friction of finding the right item, for a catalog that's easy to get lost in.</p>
+        </div>
+        <span class="pill">Proposed · Not yet built</span>
+      </div>
+
+      <div class="chain">
+        <div class="step"><div class="label">Design</div><ul><li>Persona &amp; greeting</li><li>Guided suggestions</li><li>Contextual product info</li></ul></div>
+        <div class="step"><div class="label">Mediators</div><ul><li>Perceived trust</li><li>Perceived usefulness</li><li>Perceived enjoyment</li></ul></div>
+        <div class="step"><div class="label">Outcomes</div><ul><li>Session → view rate</li><li>View → cart rate</li><li>Return visit rate</li></ul></div>
+        <div class="step impact"><div class="label">Impact</div><ul><li>↑ Discovery conversion</li><li>↑ Revenue</li><li>↑ Retention</li></ul></div>
+      </div>
+
+      <div class="rollout">
+        <div class="chip"><div class="ph">Phase 1 · Months 1–2</div><div class="g">Pilot on lowest-converting 20% of product pages, A/B tested</div></div>
+        <div class="chip"><div class="ph">Phase 2 · Months 3–4</div><div class="g">Expand catalog-wide with personalization</div></div>
+        <div class="chip"><div class="ph">Phase 3 · Months 5–6+</div><div class="g">Extend to email, mobile, and retention reporting</div></div>
+      </div>
+
+      <div class="impact-row">
+        <div class="impact-card"><div class="tag" style="color:var(--blue)">CONSERVATIVE — 25% of gap closed</div><div class="sub">$12,700 / month</div><div class="num">$152,500</div><div class="permo">projected annualized revenue</div></div>
+        <div class="impact-card"><div class="tag" style="color:var(--yellow)">MODERATE — 50% of gap closed</div><div class="sub">$25,400 / month</div><div class="num">$305,200</div><div class="permo">projected annualized revenue</div></div>
+        <div class="impact-card"><div class="tag" style="color:var(--green)">STRONG — 75% of gap closed</div><div class="sub">$38,100 / month</div><div class="num">$457,800</div><div class="permo">projected annualized revenue</div></div>
+      </div>
+      <div class="impact-note">Modeled off the observed conversion gap, not a promised outcome: ~89,000 sessions/month, the 0.84-point Dec → Jan gap (1.73% → 0.89%), and ~$68 average order value. These are directional planning estimates — Phase 1 is designed to validate the real recovery rate.</div>
+    </div>
+  </div>
+</section>
+
+<footer id="footer-links">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h2>Explore the Project</h2>
+        <div class="stackrow">
+          <span>BigQuery · SQL</span><span>Python · scipy</span><span>pandas</span><span>Tableau</span><span>Figma</span>
+        </div>
+      </div>
+      <div>
+        <div class="links">
+          <a href="https://public.tableau.com/views/G4RevenueAnalytics/Dashboard2" target="_blank" rel="noopener"><span>Live Tableau dashboard</span><span class="arrow">→</span></a>
+          <a href="https://github.com/chaialishekar/Google-merchandise-store-Revenue-analytics.git" target="_blank" rel="noopener"><span>Github Repository</span><span class="arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => io.observe(el));
+  } else { revealEls.forEach(el => el.classList.add('in')); }
+</script>
+
+</body>
+</html>
